@@ -60,4 +60,5 @@ workflows:
   manual-airflow-image:
     when: << pipeline.parameters.run-airflow-build >>
     jobs:
-      - build-and-push-airflow
+      - build-and-push-airflow:
+          context: finout
