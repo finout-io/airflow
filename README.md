@@ -18,6 +18,68 @@
 -->
 
 <!-- START Apache Airflow, please keep comment here to allow auto update of PyPI readme.md -->
+# Finout fork
+
+## Why we forked?
+There is an existing [bug](https://github.com/apache/airflow/pull/47568) in kubernetes provider that fails when the resulting xcom is too big. This was fixed
+in new versions, so the fix was backported to 2.9.3.
+
+## How to build the package
+(Not needed for building the docker image)
+
+1. Ensure Python 3.10 is installed and on `PATH` (`which python3.10`). Breeze only supports 3.9–3.11,
+   and we pin to 3.10 for predictable tooling. You can install it using homebrew:
+   `brew install python@3.10`
+2. Install Breeze from local sources with that interpreter (isolated via pipx):\
+   `pipx install --python /opt/homebrew/bin/python3.10 -e ./dev/breeze`\
+   Breeze is Airflow’s developer CLI for building, testing, and releasing; this installs it from the local source tree without touching system Python.
+   pipx install Python-based tools into isolated environments so they don’t conflict with other tools.
+3. Install Hatch with the same interpreter (also isolated via pipx):\
+   `pipx install --python /opt/homebrew/bin/python3.10 hatch`\
+   Hatch is the Python build backend/CLI used to produce wheels/sdists;
+   As with Breeze, pipx keeps it separate so it doesn’t conflict with project deps.
+4. Build the wheel using local Hatch:\
+   `breeze release-management prepare-airflow-package --package-format wheel --use-local-hatch`.\
+   Breeze orchestrates the build, invoking Hatch locally instead of pulling a Docker image.
+5. Find the resulting wheel in `dist/`; reference it from downstream projects (file URL, find-links, or upload to your private index).
+
+## Build the Docker image (local fork)
+
+1. Ensure buildx is available: `docker buildx version` should succeed.
+   If it *doesn’t* (or you see permission errors under `~/.docker/buildx`), create a local config as a workaround:
+   ```
+   mkdir -p .docker-config/cli-plugins
+   cp -a ~/.docker/cli-plugins/* .docker-config/cli-plugins/
+   ```
+   Then set `DOCKER_CONFIG=$(pwd)/.docker-config` in the build command below.
+2. Build the Airflow image from local sources (uses Python 3.11 slim bookworm; builds amd64 so it runs on x86 clusters):
+   ```
+   DOCKER_CONFIG=$(pwd)/.docker-config \
+   DOCKER_BUILDKIT=1 \
+   docker buildx build --platform linux/amd64 \
+     --progress=plain \
+     --tag finout-airflow:2.9.3-finout \
+     --build-arg PYTHON_BASE_IMAGE="python:3.11-slim-bookworm" \
+     --build-arg AIRFLOW_VERSION="2.9.3" \
+     --build-arg AIRFLOW_INSTALLATION_METHOD="." \
+     --build-arg AIRFLOW_SOURCES_FROM="." \
+     --build-arg AIRFLOW_SOURCES_TO="/opt/airflow" \
+     --build-arg AIRFLOW_CONSTRAINTS_REFERENCE="constraints-2.9.3" \
+     .
+   ```
+3. Push to ECR (after a successful build and `docker login` to ECR):
+   ```
+   docker tag finout-airflow:2.9.3-finout \
+     277411487094.dkr.ecr.us-east-1.amazonaws.com/finout-data-airflow:finout-fork-2.9.3-python3.11-cd39269
+
+   docker push 277411487094.dkr.ecr.us-east-1.amazonaws.com/finout-data-airflow:finout-fork-2.9.3-python3.11-cd39269
+   ```
+4. Quick smoke test:
+   ```
+   docker run --rm -e AIRFLOW__CORE__LOAD_EXAMPLES=false \
+     finout-airflow:2.9.3-finout airflow version
+   ```
+
 # Apache Airflow
 
 [![PyPI version](https://badge.fury.io/py/apache-airflow.svg)](https://badge.fury.io/py/apache-airflow)

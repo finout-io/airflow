@@ -1,0 +1,63 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@5.4.1
+  aws-ecr: circleci/aws-ecr@9.7.0
+
+parameters:
+  run-airflow-build:
+    type: boolean
+    default: false
+    description: Manually set to true when triggering the pipeline to build & push the Airflow image
+  airflow_version:
+    type: string
+    default: "2.9.3"
+  python_version:
+    type: string
+    default: "3.11"
+  repo:
+    type: string
+    default: "finout-data-airflow"
+
+commands:
+  load-short-sha:
+    steps:
+      - run:
+          name: Export SHORT_SHA
+          command: |
+            short_sha=$(echo "$CIRCLE_SHA1" | cut -c1-7)
+            echo "export SHORT_SHA=${short_sha}" >> "$BASH_ENV"
+
+jobs:
+  build-and-push-airflow:
+    environment:
+      DOCKER_BUILDKIT: "1"
+    machine:
+      image: ubuntu-2004:2024.05.1
+    steps:
+      - load-short-sha
+      - checkout
+      - aws-ecr/build_and_push_image:
+          auth:
+            - aws-cli/setup
+          checkout: false
+          create_repo: true
+          dockerfile: Dockerfile
+          extra_build_args: >-
+            --platform linux/arm64
+            --build-arg PYTHON_BASE_IMAGE=python:<< pipeline.parameters.python_version >>-slim-bookworm
+            --build-arg AIRFLOW_VERSION=<< pipeline.parameters.airflow_version >>
+            --build-arg AIRFLOW_INSTALLATION_METHOD=.
+            --build-arg AIRFLOW_SOURCES_FROM=.
+            --build-arg AIRFLOW_SOURCES_TO=/opt/airflow
+            --build-arg AIRFLOW_CONSTRAINTS_REFERENCE=constraints-<< pipeline.parameters.airflow_version >>
+          no_output_timeout: 30m
+          repo: << pipeline.parameters.repo >>
+          skip_when_tags_exist: false
+          tag: finout-fork-<< pipeline.parameters.airflow_version >>-python<< pipeline.parameters.python_version >>-$SHORT_SHA
+
+workflows:
+  manual-airflow-image:
+    when: << pipeline.parameters.run-airflow-build >>
+    jobs:
+      - build-and-push-airflow

@@ -15,9 +15,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
 from __future__ import annotations
 
-__version__ = "2.9.3"
+# PEP 440 requires local versions to use "+", not "-"
+# e.g. 2.9.3+finout is acceptable while 2.9.3-finout is not.
+__version__ = "2.9.3+finout"
 
 import os
 import sys
