@@ -80,6 +80,13 @@ in new versions, so the fix was backported to 2.9.3.
      finout-airflow:2.9.3-finout airflow version
    ```
 
+## Build & push via CircleCI (manual trigger)
+
+1. Push your changes to GitHub so CircleCI can see the branch.
+2. In CircleCI, click “Trigger Pipeline” for this repo.
+3. Set parameters:
+   - `run-airflow-build=true` (required to run the workflow)
+
 # Apache Airflow
 
 [![PyPI version](https://badge.fury.io/py/apache-airflow.svg)](https://badge.fury.io/py/apache-airflow)

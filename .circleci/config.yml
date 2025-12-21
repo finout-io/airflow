@@ -34,6 +34,7 @@ jobs:
       DOCKER_BUILDKIT: "1"
     machine:
       image: ubuntu-2004:2024.05.1
+      resource_class: 2xlarge
     steps:
       - load-short-sha
       - checkout
