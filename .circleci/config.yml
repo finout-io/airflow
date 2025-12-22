@@ -44,8 +44,8 @@ jobs:
           checkout: false
           create_repo: true
           dockerfile: Dockerfile
+          platform: "linux/arm64"
           extra_build_args: >-
-            --platform linux/arm64
             --build-arg PYTHON_BASE_IMAGE=python:<< pipeline.parameters.python_version >>-slim-bookworm
             --build-arg AIRFLOW_VERSION=<< pipeline.parameters.airflow_version >>
             --build-arg AIRFLOW_INSTALLATION_METHOD=.
