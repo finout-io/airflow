@@ -56,7 +56,7 @@ in new versions, so the fix was backported to 2.9.3.
    ```
    DOCKER_CONFIG=$(pwd)/.docker-config \
    DOCKER_BUILDKIT=1 \
-   docker buildx build --platform linux/amd64 \
+   docker buildx build --platform linux/arm64 \
      --progress=plain \
      --tag finout-airflow:2.9.3-finout \
      --build-arg PYTHON_BASE_IMAGE="python:3.11-slim-bookworm" \
