@@ -34,7 +34,7 @@ jobs:
       DOCKER_BUILDKIT: "1"
     machine:
       image: ubuntu-2004:2024.05.1
-      resource_class: arm.large
+      resource_class: xlarge
     steps:
       - load-short-sha
       - checkout
@@ -44,7 +44,7 @@ jobs:
           checkout: false
           create_repo: true
           dockerfile: Dockerfile
-          platform: "linux/arm64"
+          platform: "linux/amd64"
           extra_build_args: >-
             --build-arg PYTHON_BASE_IMAGE=python:<< pipeline.parameters.python_version >>-slim-bookworm
             --build-arg AIRFLOW_VERSION=<< pipeline.parameters.airflow_version >>
