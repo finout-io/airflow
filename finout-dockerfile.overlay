@@ -1,0 +1,6 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+# Copy the branch backported changes (compared to tag 2.9.3)
+COPY --chown=airflow:0 airflow/providers/cncf/kubernetes/utils/pod_manager.py \
+  /home/airflow/.local/lib/python3.11/site-packages/airflow/providers/cncf/kubernetes/utils/pod_manager.py

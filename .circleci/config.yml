@@ -9,6 +9,10 @@ parameters:
     type: boolean
     default: false
     description: Manually set to true when triggering the pipeline to build & push the Airflow image
+  run-airflow-overlay-build:
+    type: boolean
+    default: false
+    description: Manually set to true when triggering the pipeline to build & push the Airflow overlay image
   airflow_version:
     type: string
     default: "2.9.3"
@@ -18,6 +22,10 @@ parameters:
   repo:
     type: string
     default: "finout-data-airflow"
+  base_image_tag:
+    type: string
+    default: "2.9.3-python3.11-936ee4f"
+    description: Tag of the base production image to overlay
 
 commands:
   load-short-sha:
@@ -57,9 +65,37 @@ jobs:
           skip_when_tags_exist: false
           tag: finout-fork-<< pipeline.parameters.airflow_version >>-python<< pipeline.parameters.python_version >>-$SHORT_SHA
 
+  build-and-push-airflow-overlay:
+    environment:
+      DOCKER_BUILDKIT: "1"
+    machine:
+      image: ubuntu-2004:2024.05.1
+      resource_class: xlarge
+    steps:
+      - load-short-sha
+      - checkout
+      - aws-ecr/build_and_push_image:
+          auth:
+            - aws-cli/setup
+          checkout: false
+          create_repo: true
+          dockerfile: finout-dockerfile.overlay
+          platform: "linux/amd64"
+          extra_build_args: >-
+            --build-arg BASE_IMAGE=${AWS_ECR_ACCOUNT_URL}/<< pipeline.parameters.repo >>:<< pipeline.parameters.base_image_tag >>
+          no_output_timeout: 30m
+          repo: << pipeline.parameters.repo >>
+          skip_when_tags_exist: false
+          tag: finout-fork-<< pipeline.parameters.airflow_version >>-python<< pipeline.parameters.python_version >>-$SHORT_SHA
+
 workflows:
   manual-airflow-image:
     when: << pipeline.parameters.run-airflow-build >>
     jobs:
       - build-and-push-airflow:
+          context: finout
+  manual-airflow-overlay-image:
+    when: << pipeline.parameters.run-airflow-overlay-build >>
+    jobs:
+      - build-and-push-airflow-overlay:
           context: finout
